@@ -1,6 +1,49 @@
+networks:
+  prestashop-network:
+    driver: bridge
+
 services:
   generate:
     image: ubuntu:latest
     volumes:
-      - .:/prestashop-docker
+.:/prestashop-docker
     command: ["/prestashop-docker/.docker/generate-docker.sh"]
+    networks:
+prestashop-network
+
+  mysql:
+    image: mysql:5.7
+    container_name: mysql-1
+    networks:
+prestashop-network
+    environment:
+      MYSQL_ROOT_PASSWORD: admin
+    ports:
+"3307:3306"
+
+  prestashop:
+    image: prestashop/prestashop:latest
+    container_name: prestashop-app
+    networks:
+prestashop-network
+    environment:
+DB_SERVER=mysql-1
+PS_DEV_MODE=1  # Enable developer mode
+    ports:
+"8080:80"
+    volumes:
+./prestashop:/var/www/html  # Map PrestaShop files to the host
+./modules:/var/www/html/modules  # Optional: Specific modules folder
+./themes:/var/www/html/themes    # Optional: Specific themes folder
+./override:/var/www/html/override # Optional: Override files
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:latest
+    container_name: phpmyadmin-1
+    networks:
+prestashop-network
+    environment:
+      PMA_HOST: mysql-1
+      MYSQL_ROOT_PASSWORD: admin
+    ports:
+"9090:80"
